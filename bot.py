@@ -1,4 +1,5 @@
 import os
+import re
 import random
 import colorsys
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
@@ -57,7 +58,6 @@ def generate_monochromatic(base_rgb: tuple) -> list:
 
 def generate_complementary(base_rgb: tuple) -> list:
     """Generate complementary palette (base + complement)"""
-    # Convert to HSL, shift hue by 180 degrees
     h, l, s = colorsys.rgb_to_hls(base_rgb[0]/255, base_rgb[1]/255, base_rgb[2]/255)
     comp_h = (h + 0.5) % 1.0
     comp_rgb = colorsys.hls_to_rgb(comp_h, l, s)
@@ -68,7 +68,7 @@ def generate_analogous(base_rgb: tuple) -> list:
     """Generate analogous palette (base + 2 adjacent colors)"""
     h, l, s = colorsys.rgb_to_hls(base_rgb[0]/255, base_rgb[1]/255, base_rgb[2]/255)
     colors = []
-    for offset in [-30/360, 0, 30/360]:  # 30 degrees offset
+    for offset in [-30/360, 0, 30/360]:
         new_h = (h + offset) % 1.0
         new_rgb = colorsys.hls_to_rgb(new_h, l, s)
         new_rgb = tuple(int(c * 255) for c in new_rgb)
@@ -108,6 +108,11 @@ def generate_split_complementary(base_rgb: tuple) -> list:
         new_rgb = tuple(int(c * 255) for c in new_rgb)
         colors.append(rgb_to_hex(new_rgb))
     return colors
+
+def generate_hsl(r: int, g: int, b: int) -> str:
+    """Generate HSL string from RGB"""
+    h, l, s = colorsys.rgb_to_hls(r/255, g/255, b/255)
+    return f"({round(h*360)}, {round(s*100)}%, {round(l*100)}%)"
 
 # ===== Command Handlers =====
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -159,7 +164,7 @@ async def about_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle /about command"""
     about_msg = (
         "🎨 *About ColorMusexBot*\n\n"
-        "This bot generates beautiful colors and palettes using AI.\n\n"
+        "This bot generates beautiful colors and palettes.\n\n"
         "*Features:*\n"
         "✓ Random color generation\n"
         "✓ 6 different color schemes\n"
@@ -169,7 +174,7 @@ async def about_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "✓ Privacy-focused\n\n"
         "*Powered by:*\n"
         "• python-telegram-bot\n"
-        "• colorsys library\n"
+        "• colorsys (Python built-in)\n"
         "• Deployed on Railway\n\n"
         "Built with ❤️ using open-source tools."
     )
@@ -218,11 +223,6 @@ async def hex_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await send_color_response(update, color, analyze=True)
     except:
         await update.message.reply_text("⚠️ Invalid hex color. Please use format: `#FF5733`", parse_mode='Markdown')
-
-def generate_hsl(r: int, g: int, b: int) -> str:
-    """Generate HSL string from RGB"""
-    h, l, s = colorsys.rgb_to_hls(r/255, g/255, b/255)
-    return f"({round(h*360)}, {round(s*100)}%, {round(l*100)}%)"
 
 async def send_color_response(update: Update, color: dict, analyze: bool = False):
     """Send color response with formatting"""
